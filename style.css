@@ -110,7 +110,7 @@ body {
 
 /* --- NIEUW: Styling voor het Uitlegscherm --- */
 #instructionsScreen {
-    background-image: url("uitleg.png"); /* <-- VERVANG DEZE! */
+    background-image: url("uitleg_v2.png"); /* <-- VERVANG DEZE! */
     background-size: cover;
     background-position: center;
     justify-content: flex-end;
@@ -142,4 +142,5 @@ button {
 
 .hidden {
     display: none !important;
+
 }
