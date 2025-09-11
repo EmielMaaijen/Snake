@@ -94,7 +94,7 @@ body {
     justify-content: center;
     align-items: center;
     background-color: rgba(0, 0, 0, 0.9);
-    color: black;
+    color: white;
     text-align: center;
 }
 
@@ -144,3 +144,4 @@ button {
     display: none !important;
 
 }
+
