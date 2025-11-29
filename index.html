@@ -35,10 +35,26 @@
         </div>
 
         <div id="gameOverScreen" class="game-overlay hidden">
-            <h2>Game Over</h2>
-            <p>Eindscore: <span id="finalScore">0</span></p>
-            <button id="restartButton">Probeer Opnieuw</button>
+            <h1 class="big-title">GAME OVER</h1>
+            <p class="big-score">SCORE: <span id="finalScore">0</span></p>
+            
+            <div class="button-group">
+                <button id="goToRegisterButton" class="primary-btn">Registreer je score!</button>
+                <button id="restartButton" class="secondary-btn">Opnieuw Spelen</button>
+            </div>
         </div>
+
+        <div id="registrationScreen" class="game-overlay hidden">
+            <h2>Score Registreren</h2>
+            <p>Vul je gegevens in om je highscore te claimen!</p>
+            
+            <input type="text" id="playerName" class="form-input" placeholder="Je Naam">
+            <input type="email" id="playerEmail" class="form-input" placeholder="Je E-mailadres">
+            
+            <button id="submitScoreButton" class="primary-btn">Verstuur Score</button>
+            <button id="cancelRegisterButton" class="secondary-btn small">Terug</button>
+        </div>
+
     </div>
     <script src="script.js"></script>
 </body>
