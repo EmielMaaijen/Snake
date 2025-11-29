@@ -1,44 +1,64 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elementen
+    // --- DOM ELEMENTEN ---
     const gameContainer = document.querySelector('.game-container');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const overlays = document.querySelectorAll('.game-overlay');
     const scoreElement = document.getElementById('score');
+    
+    // Schermen
     const startScreen = document.getElementById('startScreen');
-    const instructionsScreen = document.getElementById('instructionsScreen'); // NIEUW
+    const instructionsScreen = document.getElementById('instructionsScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
+    const registrationScreen = document.getElementById('registrationScreen'); // NIEUW
+    
     const finalScoreElement = document.getElementById('finalScore');
-    const showInstructionsButton = document.getElementById('showInstructionsButton'); // AANGEPAST
-    const startGameButton = document.getElementById('startGameButton'); // NIEUW
-    const restartButton = document.getElementById('restartButton');
     const timerElement = document.getElementById('timer');
 
-    // Spelinstellingen
+    // Knoppen
+    const showInstructionsButton = document.getElementById('showInstructionsButton');
+    const startGameButton = document.getElementById('startGameButton');
+    const restartButton = document.getElementById('restartButton');
+    
+    // Nieuwe Knoppen en Velden
+    const goToRegisterButton = document.getElementById('goToRegisterButton');
+    const submitScoreButton = document.getElementById('submitScoreButton');
+    const cancelRegisterButton = document.getElementById('cancelRegisterButton');
+    const playerNameInput = document.getElementById('playerName');
+    const playerEmailInput = document.getElementById('playerEmail');
+
+    // --- SPEL INSTELLINGEN ---
     let gridSizeX, gridSizeY;
     const tileCountX = 36;
     const tileCountY = 36;
-    const gameSpeed = 80;
+    
+    // SNELHEID
+    let currentSpeed = 80; 
 
-    // Power-up
+    // POWER-UP
     let isPoweredUp = false;
     let powerUpTimer = 0;
-    const POWERUP_DURATION = 20;
+    const POWERUP_DURATION = 15; 
 
+    // AFBEELDINGEN
     const foodImage = new Image();
     foodImage.src = 'food.png';
-    foodImage.onerror = () => alert("food.png niet gevonden!");
+    foodImage.onerror = () => console.log("food.png niet gevonden!");
 
-    // Spelvariabelen
-    let snake, food, score, gameInterval, isGameOver;
+    // VARIABELEN
+    let snake;
+    let foods = []; 
+    let score;
+    let gameInterval;
+    let isGameOver;
     let gameMap = [];
     let currentDirection = { x: 0, y: 0 };
     let desiredDirection = { x: 0, y: 0 };
     let gameTimerInterval, elapsedTime = 0;
 
+    // --- SETUP FUNCTIE ---
     function setupCanvasAndGame() {
         const availableHeight = window.innerHeight * 0.90;
-        const aspectRatio = 1; // Vierkant 36x36
         canvas.height = Math.floor(availableHeight / tileCountY) * tileCountY;
         canvas.width = canvas.height; 
         
@@ -57,13 +77,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         let startPos = findSafeSpot();
-        if (!startPos) {
-            alert("Fout: Geen veilige startplek gevonden in de map!");
-            return;
-        }
-        snake = [startPos];
+        if (!startPos) startPos = { x: 1, y: 1 };
         
-        food = generateFood();
+        // RESET
+        snake = [startPos];
+        currentSpeed = 80;
+        
+        foods = [];
+        const initialFood = generateFood();
+        if (initialFood) foods.push(initialFood);
+        
         score = 0;
         isGameOver = false;
         isPoweredUp = false;
@@ -80,12 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
         elapsedTime = 0;
         if(timerElement) timerElement.textContent = formatTime(elapsedTime);
         
+        // Verberg alle overlays behalve start
         gameOverScreen.classList.add('hidden');
-        instructionsScreen.classList.add('hidden'); // Verberg uitlegscherm bij start
-        startScreen.classList.remove('hidden'); // Toon startscherm
+        instructionsScreen.classList.add('hidden');
+        registrationScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+        
         draw();
     }
     
+    // --- MAP LOGICA ---
     function createGridPatternMap() {
         gameMap = [];
         const isRail = (x, y) => ((x - 1) % 3 === 0) || ((y - 1) % 3 === 0);
@@ -122,10 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    // --- GAME START ---
     function startGame() {
         if (gameInterval) return;
-        instructionsScreen.classList.add('hidden'); // Verberg uitlegscherm om spel te tonen
-        gameInterval = setInterval(gameLoop, gameSpeed);
+        instructionsScreen.classList.add('hidden');
+        
+        gameInterval = setInterval(gameLoop, currentSpeed);
+        
         clearInterval(gameTimerInterval);
         gameTimerInterval = setInterval(() => {
             elapsedTime++;
@@ -145,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
     
+    // --- UPDATE ---
     function update() {
         if (currentDirection.x === 0 && currentDirection.y === 0) {
             if (desiredDirection.x !== 0 || desiredDirection.y !== 0) {
@@ -154,124 +185,198 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentDirection = desiredDirection;
                  }
             }
-            if (currentDirection.x === 0 && currentDirection.y === 0) {
-                return;
-            }
+            if (currentDirection.x === 0 && currentDirection.y === 0) return;
         }
+
         if (isPoweredUp) {
             powerUpTimer--;
-            if (powerUpTimer <= 0) {
-                isPoweredUp = false;
-            }
+            if (powerUpTimer <= 0) isPoweredUp = false;
         }
+
         const head = snake[0];
         const currentTile = gameMap[head.y][head.x];
+        
         let canMoveDesired = false;
         if (desiredDirection.y === -1 && currentTile.u) canMoveDesired = true;
         else if (desiredDirection.y === 1 && currentTile.d) canMoveDesired = true;
         else if (desiredDirection.x === -1 && currentTile.l) canMoveDesired = true;
         else if (desiredDirection.x === 1 && currentTile.r) canMoveDesired = true;
+        
         if (canMoveDesired) {
             currentDirection.x = desiredDirection.x;
             currentDirection.y = desiredDirection.y;
         }
+
         const nextHead = { x: head.x + currentDirection.x, y: head.y + currentDirection.y };
         const nextTile = gameMap[nextHead.y]?.[nextHead.x];
+        
         if (!nextTile) { isGameOver = true; return; }
         if (currentDirection.y === -1 && !nextTile.d) { isGameOver = true; return; }
         if (currentDirection.y === 1 && !nextTile.u) { isGameOver = true; return; }
         if (currentDirection.x === -1 && !nextTile.r) { isGameOver = true; return; }
         if (currentDirection.x === 1 && !nextTile.l) { isGameOver = true; return; }
+        
         for (let i = 0; i < snake.length; i++) { 
             if (nextHead.x === snake[i].x && nextHead.y === snake[i].y) { 
                 isGameOver = true; return; 
             } 
         }
+        
         snake.unshift(nextHead);
-        if (food && nextHead.x === food.x && nextHead.y === food.y) {
+
+        let eatenIndex = -1;
+        for (let i = 0; i < foods.length; i++) {
+            if (nextHead.x === foods[i].x && nextHead.y === foods[i].y) {
+                eatenIndex = i;
+                break;
+            }
+        }
+
+        if (eatenIndex !== -1) {
+            foods.splice(eatenIndex, 1);
             score++;
             scoreElement.textContent = score;
-            food = generateFood();
+            
             isPoweredUp = true;
             powerUpTimer = POWERUP_DURATION;
+
+            if (score > 5) {
+                const newSpeed = Math.max(40, 80 - (score - 5));
+                if (newSpeed !== currentSpeed) {
+                    currentSpeed = newSpeed;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, currentSpeed);
+                }
+            }
+
+            const targetFoodCount = (score >= 10) ? 3 : 1;
+            let attempts = 0;
+            while (foods.length < targetFoodCount && attempts < 10) {
+                const newF = generateFood();
+                if (newF) foods.push(newF);
+                attempts++;
+            }
+
         } else {
             snake.pop();
         }
     }
 
+    // --- DRAW ---
     function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let snakeColor = '#4CAF50';
-    if (isPoweredUp) {
-        const ratio = Math.min(score / 100, 1);
-        const greenValue = 165 - (165 * ratio);
-        snakeColor = `rgb(255, ${Math.floor(greenValue)}, 0)`;
-    }
-    if (snake && snake.length > 0) {
-        ctx.beginPath();
-        ctx.moveTo(snake[0].x * gridSizeX + gridSizeX / 2, snake[0].y * gridSizeY + gridSizeY / 2);
-        for (let i = 1; i < snake.length; i++) {
-            ctx.lineTo(snake[i].x * gridSizeX + gridSizeX / 2, snake[i].y * gridSizeY + gridSizeY / 2);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+
+        // 1. KLEUR
+        let snakeColor;
+        if (score >= 30) {
+            snakeColor = 'rgb(255, 0, 0)'; 
+        } else if (isPoweredUp) {
+            snakeColor = 'rgb(255, 165, 0)'; 
+        } else {
+            const ratio = score / 30;
+            const startR = 76, startG = 175, startB = 80;
+            const endR = 255, endG = 0, endB = 0;
+            const r = Math.floor(startR + (endR - startR) * ratio);
+            const g = Math.floor(startG + (endG - startG) * ratio);
+            const b = Math.floor(startB + (endB - startB) * ratio);
+            snakeColor = `rgb(${r}, ${g}, ${b})`;
         }
-        const snakeWidth = Math.max(5, Math.min(gridSizeX, gridSizeY) - 5);
-        ctx.strokeStyle = snakeColor;
-        ctx.lineWidth = snakeWidth;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-        const head = snake[0];
-        const headCenterX = head.x * gridSizeX + gridSizeX / 2;
-        const headCenterY = head.y * gridSizeY + gridSizeY / 2;
-        const headRadius = snakeWidth / 2;
-        ctx.fillStyle = snakeColor;
-        ctx.beginPath();
-        ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
-        ctx.fill();
-        let eyeOffsetX = 0, eyeOffsetY = 0;
-        const eyeOffsetAmount = 5;
-        if (currentDirection.x === 1) eyeOffsetX = eyeOffsetAmount;
-        if (currentDirection.x === -1) eyeOffsetX = -eyeOffsetAmount;
-        if (currentDirection.y === 1) eyeOffsetY = eyeOffsetAmount;
-        if (currentDirection.y === -1) eyeOffsetY = -eyeOffsetAmount;
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY - 4, 4, 0, Math.PI * 2);
-        ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY + 4, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY - 4, 2, 0, Math.PI * 2);
-        ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY + 4, 2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    if (food) {
-        // --- DEZE CODE IS HERSTELD ---
-        const foodSizeFactor = 2; // 25% groter. Pas dit getal aan naar wens.
+
+        // 2. GLOED
+        if (score >= 30) {
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = snakeColor;
+        }
+        else if (score >= 20) {
+            const time = Date.now() / 200; 
+            const pulseIntensity = 15 + Math.sin(time) * 10;
+            ctx.shadowBlur = pulseIntensity;
+            ctx.shadowColor = snakeColor; 
+        }
+        else if (isPoweredUp) {
+            const time = Date.now() / 50; 
+            const pulseIntensity = 20 + Math.sin(time) * 10;
+            ctx.shadowBlur = pulseIntensity;
+            ctx.shadowColor = snakeColor;
+        }
+        else {
+            ctx.shadowBlur = 0;
+        }
         
+        if (snake && snake.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(snake[0].x * gridSizeX + gridSizeX / 2, snake[0].y * gridSizeY + gridSizeY / 2);
+            for (let i = 1; i < snake.length; i++) {
+                ctx.lineTo(snake[i].x * gridSizeX + gridSizeX / 2, snake[i].y * gridSizeY + gridSizeY / 2);
+            }
+            const snakeWidth = Math.max(5, Math.min(gridSizeX, gridSizeY) - 5);
+            ctx.strokeStyle = snakeColor;
+            ctx.lineWidth = snakeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            const head = snake[0];
+            const headCenterX = head.x * gridSizeX + gridSizeX / 2;
+            const headCenterY = head.y * gridSizeY + gridSizeY / 2;
+            const headRadius = snakeWidth / 2;
+            
+            ctx.fillStyle = snakeColor;
+            ctx.beginPath();
+            ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+
+            let eyeOffsetX = 0, eyeOffsetY = 0;
+            const eyeOffsetAmount = 5;
+            if (currentDirection.x === 1) eyeOffsetX = eyeOffsetAmount;
+            if (currentDirection.x === -1) eyeOffsetX = -eyeOffsetAmount;
+            if (currentDirection.y === 1) eyeOffsetY = eyeOffsetAmount;
+            if (currentDirection.y === -1) eyeOffsetY = -eyeOffsetAmount;
+            
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY - 4, 4, 0, Math.PI * 2);
+            ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY + 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY - 4, 2, 0, Math.PI * 2);
+            ctx.arc(headCenterX + eyeOffsetX, headCenterY + eyeOffsetY + 4, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        const foodSizeFactor = 2; 
         const foodWidth = gridSizeX * foodSizeFactor;
         const foodHeight = gridSizeY * foodSizeFactor;
-
-        // Bereken de offset om de afbeelding gecentreerd te houden
         const offsetX = (foodWidth - gridSizeX) / 2;
         const offsetY = (foodHeight - gridSizeY) / 2;
 
-        ctx.drawImage(
-            foodImage, 
-            food.x * gridSizeX - offsetX, 
-            food.y * gridSizeY - offsetY, 
-            foodWidth, 
-            foodHeight
-        );
+        foods.forEach(f => {
+            ctx.drawImage(
+                foodImage, 
+                f.x * gridSizeX - offsetX, 
+                f.y * gridSizeY - offsetY, 
+                foodWidth, 
+                foodHeight
+            );
+        });
     }
-}
     
+    // --- UTILS ---
     function generateFood() {
         const safeSpots = [];
         for (let y = 0; y < tileCountY; y++) {
             for (let x = 0; x < tileCountX; x++) {
                 const tile = gameMap[y][x];
                 if (tile.u || tile.d || tile.l || tile.r) {
-                    if (!snake.some(seg => seg.x === x && seg.y === y)) {
+                    const onSnake = snake.some(seg => seg.x === x && seg.y === y);
+                    const onOtherFood = foods.some(f => f.x === x && f.y === y);
+                    if (!onSnake && !onOtherFood) {
                         safeSpots.push({x, y});
                     }
                 }
@@ -280,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (safeSpots.length > 0) {
             return safeSpots[Math.floor(Math.random() * safeSpots.length)];
         }
-        isGameOver = true;
         return null;
     }
 
@@ -290,20 +394,50 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    // --- AANGEPASTE EVENT LISTENERS ---
+    // --- EVENT LISTENERS (AANGEPAST) ---
     showInstructionsButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         instructionsScreen.classList.remove('hidden');
     });
 
     startGameButton.addEventListener('click', startGame);
-
+    
+    // Restart knop in Game Over scherm
     restartButton.addEventListener('click', setupCanvasAndGame);
+
+    // Navigatie naar registratie scherm
+    goToRegisterButton.addEventListener('click', () => {
+        gameOverScreen.classList.add('hidden');
+        registrationScreen.classList.remove('hidden');
+        // Velden leegmaken
+        playerNameInput.value = '';
+        playerEmailInput.value = '';
+    });
+
+    // Terug van registratie naar game over (als je bedenkt)
+    cancelRegisterButton.addEventListener('click', () => {
+        registrationScreen.classList.add('hidden');
+        gameOverScreen.classList.remove('hidden');
+    });
+
+    // Score "versturen" (Voor nu: alert en terug naar start)
+    submitScoreButton.addEventListener('click', () => {
+        const name = playerNameInput.value;
+        const email = playerEmailInput.value;
+
+        if(name && email) {
+            alert(`Bedankt ${name}! Je score van ${score} is geregistreerd.`);
+            setupCanvasAndGame(); // Terug naar start
+        } else {
+            alert("Vul alsjeblieft beide velden in.");
+        }
+    });
+
     window.addEventListener('resize', setupCanvasAndGame);
 
     window.addEventListener('keydown', e => {
         if (isGameOver) return;
-        if (!gameInterval && instructionsScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (!gameInterval && instructionsScreen.classList.contains('hidden') && registrationScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             startGame();
         }
         switch (e.key) {
