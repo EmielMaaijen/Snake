@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startScreen = document.getElementById('startScreen');
     const instructionsScreen = document.getElementById('instructionsScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
-    const registrationScreen = document.getElementById('registrationScreen'); // NIEUW
+    const registrationScreen = document.getElementById('registrationScreen');
     
     const finalScoreElement = document.getElementById('finalScore');
     const timerElement = document.getElementById('timer');
@@ -19,8 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showInstructionsButton = document.getElementById('showInstructionsButton');
     const startGameButton = document.getElementById('startGameButton');
     const restartButton = document.getElementById('restartButton');
-    
-    // Nieuwe Knoppen en Velden
     const goToRegisterButton = document.getElementById('goToRegisterButton');
     const submitScoreButton = document.getElementById('submitScoreButton');
     const cancelRegisterButton = document.getElementById('cancelRegisterButton');
@@ -35,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // SNELHEID
     let currentSpeed = 80; 
 
-    // POWER-UP
+    // POWER-UP (Alleen voor de pulse timer)
     let isPoweredUp = false;
     let powerUpTimer = 0;
     const POWERUP_DURATION = 15; 
@@ -103,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elapsedTime = 0;
         if(timerElement) timerElement.textContent = formatTime(elapsedTime);
         
-        // Verberg alle overlays behalve start
+        // Schermen resetten
         gameOverScreen.classList.add('hidden');
         instructionsScreen.classList.add('hidden');
         registrationScreen.classList.add('hidden');
@@ -237,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             score++;
             scoreElement.textContent = score;
             
+            // Activeer de flits
             isPoweredUp = true;
             powerUpTimer = POWERUP_DURATION;
 
@@ -262,49 +261,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DRAW ---
+    // --- DRAW (AANGEPAST) ---
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Reset effecten
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
 
-        // 1. KLEUR
+        // 1. KLEUR & GLOED BEPALEN
         let snakeColor;
+        
         if (score >= 30) {
+            // RAGE MODE: Fel Rood + Maximale Gloed
             snakeColor = 'rgb(255, 0, 0)'; 
-        } else if (isPoweredUp) {
-            snakeColor = 'rgb(255, 165, 0)'; 
-        } else {
-            const ratio = score / 30;
-            const startR = 76, startG = 175, startB = 80;
-            const endR = 255, endG = 0, endB = 0;
-            const r = Math.floor(startR + (endR - startR) * ratio);
-            const g = Math.floor(startG + (endG - startG) * ratio);
-            const b = Math.floor(startB + (endB - startB) * ratio);
-            snakeColor = `rgb(${r}, ${g}, ${b})`;
-        }
-
-        // 2. GLOED
-        if (score >= 30) {
             ctx.shadowBlur = 25;
-            ctx.shadowColor = snakeColor;
-        }
-        else if (score >= 20) {
-            const time = Date.now() / 200; 
-            const pulseIntensity = 15 + Math.sin(time) * 10;
-            ctx.shadowBlur = pulseIntensity;
-            ctx.shadowColor = snakeColor; 
-        }
+            ctx.shadowColor = 'red';
+        } 
         else if (isPoweredUp) {
+            // EAT MODE: Fel Oranje + Flits
+            snakeColor = 'rgb(255, 165, 0)'; 
+            
+            // Pulse effect
             const time = Date.now() / 50; 
             const pulseIntensity = 20 + Math.sin(time) * 10;
             ctx.shadowBlur = pulseIntensity;
-            ctx.shadowColor = snakeColor;
-        }
+            ctx.shadowColor = 'orange';
+        } 
         else {
+            // STANDAARD MODE: Gewoon Groen (Geen verloop, geen gloed)
+            snakeColor = '#4CAF50'; 
             ctx.shadowBlur = 0;
         }
         
+        // 2. TEKENEN
         if (snake && snake.length > 0) {
             ctx.beginPath();
             ctx.moveTo(snake[0].x * gridSizeX + gridSizeX / 2, snake[0].y * gridSizeY + gridSizeY / 2);
@@ -328,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
             ctx.fill();
             
+            // Gloed uitzetten voor details
             ctx.shadowBlur = 0;
             ctx.shadowColor = 'transparent';
 
@@ -394,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    // --- EVENT LISTENERS (AANGEPAST) ---
+    // --- EVENT LISTENERS ---
     showInstructionsButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         instructionsScreen.classList.remove('hidden');
@@ -402,32 +393,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startGameButton.addEventListener('click', startGame);
     
-    // Restart knop in Game Over scherm
     restartButton.addEventListener('click', setupCanvasAndGame);
 
-    // Navigatie naar registratie scherm
     goToRegisterButton.addEventListener('click', () => {
         gameOverScreen.classList.add('hidden');
         registrationScreen.classList.remove('hidden');
-        // Velden leegmaken
         playerNameInput.value = '';
         playerEmailInput.value = '';
     });
 
-    // Terug van registratie naar game over (als je bedenkt)
     cancelRegisterButton.addEventListener('click', () => {
         registrationScreen.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
     });
 
-    // Score "versturen" (Voor nu: alert en terug naar start)
     submitScoreButton.addEventListener('click', () => {
         const name = playerNameInput.value;
         const email = playerEmailInput.value;
-
         if(name && email) {
             alert(`Bedankt ${name}! Je score van ${score} is geregistreerd.`);
-            setupCanvasAndGame(); // Terug naar start
+            setupCanvasAndGame();
         } else {
             alert("Vul alsjeblieft beide velden in.");
         }
