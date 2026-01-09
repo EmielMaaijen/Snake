@@ -167,6 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(gameInterval);
             clearInterval(gameTimerInterval);
             if (finalScoreElement) finalScoreElement.textContent = score;
+            const finalTimerElement = document.getElementById('finalTimer'); // Zorg dat dit ID in je HTML staat
+            if (finalTimerElement) finalTimerElement.textContent = formatTime(elapsedTime);
+            
             gameOverScreen.classList.remove('hidden');
             return;
         }
@@ -248,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const targetFoodCount = (score >= 10) ? 3 : 1;
+            const targetFoodCount = (score >= 3) ? 5 : 1;
             let attempts = 0;
             while (foods.length < targetFoodCount && attempts < 10) {
                 const newF = generateFood();
@@ -435,3 +438,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCanvasAndGame();
 });
+
