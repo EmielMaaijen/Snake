@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // POWER-UP (Alleen voor de pulse timer)
     let isPoweredUp = false;
     let powerUpTimer = 0;
-    const POWERUP_DURATION = 15; 
+    const POWERUP_DURATION = 30; 
 
     // AFBEELDINGEN
     const foodImage = new Image();
@@ -391,4 +391,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCanvasAndGame();
 });
+
 
