@@ -19,11 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showInstructionsButton = document.getElementById('showInstructionsButton');
     const startGameButton = document.getElementById('startGameButton');
     const restartButton = document.getElementById('restartButton');
-    const goToRegisterButton = document.getElementById('goToRegisterButton');
-    const submitScoreButton = document.getElementById('submitScoreButton');
-    const cancelRegisterButton = document.getElementById('cancelRegisterButton');
-    const playerNameInput = document.getElementById('playerName');
-    const playerEmailInput = document.getElementById('playerEmail');
 
     // --- SPEL INSTELLINGEN ---
     let gridSizeX, gridSizeY;
@@ -104,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Schermen resetten
         gameOverScreen.classList.add('hidden');
         instructionsScreen.classList.add('hidden');
-        registrationScreen.classList.add('hidden');
         startScreen.classList.remove('hidden');
         
         draw();
@@ -425,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('keydown', e => {
         if (isGameOver) return;
-        if (!gameInterval && instructionsScreen.classList.contains('hidden') && registrationScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (!gameInterval && instructionsScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             startGame();
         }
         switch (e.key) {
@@ -438,5 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCanvasAndGame();
 });
+
 
 
