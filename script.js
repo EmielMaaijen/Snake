@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             powerUpTimer = POWERUP_DURATION;
 
             if (score > 5) {
-                const newSpeed = Math.max(40, 80 - (score - 5));
+                const newSpeed = Math.max(20, 80 - (score - 5));
                 if (newSpeed !== currentSpeed) {
                     currentSpeed = newSpeed;
                     clearInterval(gameInterval);
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. KLEUR & GLOED BEPALEN
         let snakeColor;
         
-        if (score >= 30) {
+        if (score >= 20) {
             // RAGE MODE: Fel Rood + Maximale Gloed
             snakeColor = 'rgb(255, 0, 0)'; 
             ctx.shadowBlur = 25;
@@ -438,4 +438,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCanvasAndGame();
 });
+
 
