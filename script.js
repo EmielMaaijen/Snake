@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlays = document.querySelectorAll('.game-overlay');
     const scoreElement = document.getElementById('score');
     
-    // Schermen
     const startScreen = document.getElementById('startScreen');
     const instructionsScreen = document.getElementById('instructionsScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
@@ -13,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalScoreElement = document.getElementById('finalScore');
     const timerElement = document.getElementById('timer');
 
-    // Knoppen
     const showInstructionsButton = document.getElementById('showInstructionsButton');
     const startGameButton = document.getElementById('startGameButton');
     const restartButton = document.getElementById('restartButton');
@@ -22,19 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let gridSizeX, gridSizeY;
     const tileCountX = 36;
     const tileCountY = 36;
-    
     let currentSpeed = 80; 
 
-    // POWER-UP (Alleen voor de pulse timer)
     let isPoweredUp = false;
     let powerUpTimer = 0;
     const POWERUP_DURATION = 15; 
 
-    // AFBEELDINGEN
     const foodImage = new Image();
     foodImage.src = 'food.png';
 
-    // VARIABELEN
     let snake;
     let foods = []; 
     let score;
@@ -45,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let desiredDirection = { x: 0, y: 0 };
     let gameTimerInterval, elapsedTime = 0;
 
-    // --- SETUP FUNCTIE ---
     function setupCanvasAndGame() {
         const availableHeight = window.innerHeight * 0.85;
         canvas.height = Math.floor(availableHeight / tileCountY) * tileCountY;
@@ -56,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createGridPatternMap();
 
-        // Positioneer overlays exact over canvas
         setTimeout(() => {
             overlays.forEach(overlay => {
                 overlay.style.top = `${canvas.offsetTop}px`;
@@ -98,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function createGridPatternMap() {
         gameMap = [];
         const isRail = (x, y) => ((x - 1) % 3 === 0) || ((y - 1) % 3 === 0);
-
         for (let y = 0; y < tileCountY; y++) {
             gameMap[y] = [];
             for (let x = 0; x < tileCountX; x++) {
@@ -123,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (gameMap[y][x].u || gameMap[y][x].d) return { x, y };
             }
         }
-        return null;
+        return { x: 1, y: 1 };
     }
 
     function startGame() {
@@ -157,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  const head = snake[0];
                  const startTile = gameMap[head.y][head.x];
                  if ((desiredDirection.y === -1 && startTile.u) || (desiredDirection.y === 1 && startTile.d) || (desiredDirection.x === -1 && startTile.l) || (desiredDirection.x === 1 && startTile.r)) {
-                    currentDirection = desiredDirection;
+                    currentDirection = { ...desiredDirection };
                  }
             }
             if (currentDirection.x === 0 && currentDirection.y === 0) return;
@@ -172,17 +163,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentTile = gameMap[head.y][head.x];
         
         if ((desiredDirection.y === -1 && currentTile.u) || (desiredDirection.y === 1 && currentTile.d) || (desiredDirection.x === -1 && currentTile.l) || (desiredDirection.x === 1 && currentTile.r)) {
-            currentDirection = desiredDirection;
+            currentDirection = { ...desiredDirection };
         }
 
         const nextHead = { x: head.x + currentDirection.x, y: head.y + currentDirection.y };
         const nextTile = gameMap[nextHead.y]?.[nextHead.x];
         
         if (!nextTile || 
-            (currentDirection.y === -1 && !nextTile.d) || 
-            (currentDirection.y === 1 && !nextTile.u) || 
-            (currentDirection.x === -1 && !nextTile.r) || 
-            (currentDirection.x === 1 && !nextTile.l)) { 
+            (currentDirection.y === -1 && !nextTile.d) || (currentDirection.y === 1 && !nextTile.u) || 
+            (currentDirection.x === -1 && !nextTile.r) || (currentDirection.x === 1 && !nextTile.l)) { 
             isGameOver = true; return; 
         }
         
@@ -199,8 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
             isPoweredUp = true;
             powerUpTimer = POWERUP_DURATION;
 
+            // SNELHEID VERHOGEN
             if (score > 5) {
-                currentSpeed = Math.max(20, 80 - (score - 5));
+                // We verlagen de interval sneller zodat je sneller bij de 20 bent
+                currentSpeed = Math.max(20, 80 - (score - 5) * 2); 
                 clearInterval(gameInterval);
                 gameInterval = setInterval(gameLoop, currentSpeed);
             }
@@ -218,12 +209,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let snakeColor = (score >= 30) ? 'red' : (isPoweredUp ? 'orange' : '#4CAF50');
         
-        if (isPoweredUp || score >= 30) {
-            ctx.shadowBlur = (score >= 30) ? 25 : 15;
-            ctx.shadowColor = (score >= 30) ? 'red' : 'orange';
+        // RAGE MODE bij score 20
+        let snakeColor = (score >= 20) ? 'rgb(255, 0, 0)' : (isPoweredUp ? 'rgb(255, 165, 0)' : '#4CAF50');
+        
+        if (score >= 20) {
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = 'red';
+        } else if (isPoweredUp) {
+            const pulse = 15 + Math.sin(Date.now() / 100) * 10;
+            ctx.shadowBlur = pulse;
+            ctx.shadowColor = 'orange';
         }
+
+        const snakeWidth = Math.min(gridSizeX, gridSizeY) - 5;
 
         if (snake && snake.length > 0) {
             ctx.beginPath();
@@ -232,22 +231,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.lineTo(snake[i].x * gridSizeX + gridSizeX/2, snake[i].y * gridSizeY + gridSizeY/2);
             }
             ctx.strokeStyle = snakeColor;
-            ctx.lineWidth = Math.min(gridSizeX, gridSizeY) - 5;
+            ctx.lineWidth = snakeWidth;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.stroke();
             
             ctx.shadowBlur = 0;
             const head = snake[0];
+            const headX = head.x * gridSizeX + gridSizeX/2;
+            const headY = head.y * gridSizeY + gridSizeY / 2;
+
+            // HET HOOFDJE (Ogen)
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(head.x * gridSizeX + gridSizeX/2, head.y * gridSizeY + gridSizeY/2, 4, 0, Math.PI*2);
+            ctx.arc(headX - 4, headY - 4, 4, 0, Math.PI * 2);
+            ctx.arc(headX + 4, headY - 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(headX - 4, headY - 4, 2, 0, Math.PI * 2);
+            ctx.arc(headX + 4, headY - 4, 2, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        const foodSize = gridSizeX * 1.5;
+        // FOOD GROOTTE (foodSizeFactor 2 zoals in je originele code)
+        const foodSizeFactor = 2; 
+        const foodWidth = gridSizeX * foodSizeFactor;
+        const foodHeight = gridSizeY * foodSizeFactor;
+        
         foods.forEach(f => {
-            ctx.drawImage(foodImage, f.x * gridSizeX - (foodSize-gridSizeX)/2, f.y * gridSizeY - (foodSize-gridSizeY)/2, foodSize, foodSize);
+            ctx.drawImage(
+                foodImage, 
+                f.x * gridSizeX - (foodWidth - gridSizeX) / 2, 
+                f.y * gridSizeY - (foodHeight - gridSizeY) / 2, 
+                foodWidth, 
+                foodHeight
+            );
         });
     }
     
@@ -255,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const safeSpots = [];
         for (let y = 0; y < tileCountY; y++) {
             for (let x = 0; x < tileCountX; x++) {
-                if ((gameMap[y][x].u || gameMap[y][x].l) && !snake.some(s => s.x === x && s.y === y)) {
+                if ((gameMap[y][x].u || gameMap[y][x].d || gameMap[y][x].l || gameMap[y][x].r) && !snake.some(s => s.x === x && s.y === y)) {
                     safeSpots.push({x, y});
                 }
             }
@@ -269,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // --- EVENT LISTENERS ---
     showInstructionsButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         instructionsScreen.classList.remove('hidden');
