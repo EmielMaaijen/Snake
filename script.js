@@ -263,18 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
         let snakeColor;
         
         // RAGE MODE NU BIJ 20
-        if (score >= 20) {
-            snakeColor = 'rgb(255, 0, 0)'; 
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = 'red';
-        } 
-        else if (isPoweredUp) {
-            snakeColor = 'rgb(255, 165, 0)'; 
-            const time = Date.now() / 50; 
-            const pulseIntensity = 20 + Math.sin(time) * 10;
-            ctx.shadowBlur = pulseIntensity;
-            ctx.shadowColor = 'orange';
-        } 
+        if (isPoweredUp) {
+            if (score >= 20) {
+                snakeColor = 'rgb(255, 0, 0)'; 
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = 'red';
+            } 
+            else {
+                snakeColor = 'rgb(255, 165, 0)'; 
+                const time = Date.now() / 50; 
+                const pulseIntensity = 20 + Math.sin(time) * 10;
+                ctx.shadowBlur = pulseIntensity;
+                ctx.shadowColor = 'orange';
+            } 
+        }    
         else {
             snakeColor = '#4CAF50'; 
             ctx.shadowBlur = 0;
@@ -389,3 +391,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCanvasAndGame();
 });
+
