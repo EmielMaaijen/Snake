@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM ELEMENTEN ---
-    const gameContainer = document.querySelector('.game-container');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const overlays = document.querySelectorAll('.game-overlay');
@@ -10,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const startScreen = document.getElementById('startScreen');
     const instructionsScreen = document.getElementById('instructionsScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
-    const registrationScreen = document.getElementById('registrationScreen');
     
     const finalScoreElement = document.getElementById('finalScore');
     const timerElement = document.getElementById('timer');
@@ -19,11 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showInstructionsButton = document.getElementById('showInstructionsButton');
     const startGameButton = document.getElementById('startGameButton');
     const restartButton = document.getElementById('restartButton');
-    const goToRegisterButton = document.getElementById('goToRegisterButton');
-    const submitScoreButton = document.getElementById('submitScoreButton');
-    const cancelRegisterButton = document.getElementById('cancelRegisterButton');
-    const playerNameInput = document.getElementById('playerName');
-    const playerEmailInput = document.getElementById('playerEmail');
 
     // --- SPEL INSTELLINGEN ---
     let gridSizeX, gridSizeY;
@@ -31,7 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tileCountY = 36;
     
     // SNELHEID
-    let currentSpeed = 80; 
+    const INITIAL_SPEED = 80;
+    const MIN_SPEED = 35; // Iets sneller dan voorheen (was 40)
+    let currentSpeed = INITIAL_SPEED; 
 
     // POWER-UP (Alleen voor de pulse timer)
     let isPoweredUp = false;
@@ -41,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // AFBEELDINGEN
     const foodImage = new Image();
     foodImage.src = 'food.png';
-    foodImage.onerror = () => console.log("food.png niet gevonden!");
 
     // VARIABELEN
     let snake;
@@ -79,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // RESET
         snake = [startPos];
-        currentSpeed = 80;
+        currentSpeed = INITIAL_SPEED;
         
         foods = [];
         const initialFood = generateFood();
@@ -101,10 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elapsedTime = 0;
         if(timerElement) timerElement.textContent = formatTime(elapsedTime);
         
-        // Schermen resetten
         gameOverScreen.classList.add('hidden');
         instructionsScreen.classList.add('hidden');
-        registrationScreen.classList.add('hidden');
         startScreen.classList.remove('hidden');
         
         draw();
@@ -167,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(gameInterval);
             clearInterval(gameTimerInterval);
             if (finalScoreElement) finalScoreElement.textContent = score;
-            const finalTimerElement = document.getElementById('finalTimer'); // Zorg dat dit ID in je HTML staat
+            const finalTimerElement = document.getElementById('finalTimer');
             if (finalTimerElement) finalTimerElement.textContent = formatTime(elapsedTime);
             
             gameOverScreen.classList.remove('hidden');
@@ -238,17 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
             score++;
             scoreElement.textContent = score;
             
-            // Activeer de flits
             isPoweredUp = true;
             powerUpTimer = POWERUP_DURATION;
 
-            if (score > 5) {
-                const newSpeed = Math.max(40, 80 - (score - 5));
-                if (newSpeed !== currentSpeed) {
-                    currentSpeed = newSpeed;
-                    clearInterval(gameInterval);
-                    gameInterval = setInterval(gameLoop, currentSpeed);
-                }
+            // SNELHEID AANPASSING (Verhoogt sneller per punt)
+            const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (score * 2));
+            if (newSpeed !== currentSpeed) {
+                currentSpeed = newSpeed;
+                clearInterval(gameInterval);
+                gameInterval = setInterval(gameLoop, currentSpeed);
             }
 
             const targetFoodCount = (score >= 3) ? 5 : 1;
@@ -264,40 +254,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DRAW (AANGEPAST) ---
+    // --- DRAW ---
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Reset effecten
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
 
-        // 1. KLEUR & GLOED BEPALEN
         let snakeColor;
         
-        if (score >= 30) {
-            // RAGE MODE: Fel Rood + Maximale Gloed
+        // RAGE MODE NU BIJ 20
+        if (score >= 20) {
             snakeColor = 'rgb(255, 0, 0)'; 
             ctx.shadowBlur = 25;
             ctx.shadowColor = 'red';
         } 
         else if (isPoweredUp) {
-            // EAT MODE: Fel Oranje + Flits
             snakeColor = 'rgb(255, 165, 0)'; 
-            
-            // Pulse effect
             const time = Date.now() / 50; 
             const pulseIntensity = 20 + Math.sin(time) * 10;
             ctx.shadowBlur = pulseIntensity;
             ctx.shadowColor = 'orange';
         } 
         else {
-            // STANDAARD MODE: Gewoon Groen (Geen verloop, geen gloed)
             snakeColor = '#4CAF50'; 
             ctx.shadowBlur = 0;
         }
         
-        // 2. TEKENEN
         if (snake && snake.length > 0) {
             ctx.beginPath();
             ctx.moveTo(snake[0].x * gridSizeX + gridSizeX / 2, snake[0].y * gridSizeY + gridSizeY / 2);
@@ -321,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Gloed uitzetten voor details
             ctx.shadowBlur = 0;
             ctx.shadowColor = 'transparent';
 
@@ -351,13 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const offsetY = (foodHeight - gridSizeY) / 2;
 
         foods.forEach(f => {
-            ctx.drawImage(
-                foodImage, 
-                f.x * gridSizeX - offsetX, 
-                f.y * gridSizeY - offsetY, 
-                foodWidth, 
-                foodHeight
-            );
+            ctx.drawImage(foodImage, f.x * gridSizeX - offsetX, f.y * gridSizeY - offsetY, foodWidth, foodHeight);
         });
     }
     
@@ -395,37 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     startGameButton.addEventListener('click', startGame);
-    
     restartButton.addEventListener('click', setupCanvasAndGame);
-
-    goToRegisterButton.addEventListener('click', () => {
-        gameOverScreen.classList.add('hidden');
-        registrationScreen.classList.remove('hidden');
-        playerNameInput.value = '';
-        playerEmailInput.value = '';
-    });
-
-    cancelRegisterButton.addEventListener('click', () => {
-        registrationScreen.classList.add('hidden');
-        gameOverScreen.classList.remove('hidden');
-    });
-
-    submitScoreButton.addEventListener('click', () => {
-        const name = playerNameInput.value;
-        const email = playerEmailInput.value;
-        if(name && email) {
-            alert(`Bedankt ${name}! Je score van ${score} is geregistreerd.`);
-            setupCanvasAndGame();
-        } else {
-            alert("Vul alsjeblieft beide velden in.");
-        }
-    });
 
     window.addEventListener('resize', setupCanvasAndGame);
 
     window.addEventListener('keydown', e => {
         if (isGameOver) return;
-        if (!gameInterval && instructionsScreen.classList.contains('hidden') && registrationScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (!gameInterval && instructionsScreen.classList.contains('hidden') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             startGame();
         }
         switch (e.key) {
