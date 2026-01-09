@@ -24,23 +24,25 @@
             </div>
             <div class="header-section right"></div>
         </div>
-        <canvas id="gameCanvas"></canvas>
+        
+        <div class="canvas-wrapper" style="position: relative; display: inline-block;">
+            <canvas id="gameCanvas"></canvas>
 
-        <div id="startScreen" class="game-overlay">
-            <button id="showInstructionsButton">Start Spel</button>
-        </div>
+            <div id="startScreen" class="game-overlay">
+                <button id="showInstructionsButton">Start Spel</button>
+            </div>
 
-        <div id="instructionsScreen" class="game-overlay hidden">
-            <button id="startGameButton">SSSStart</button>
-        </div>
+            <div id="instructionsScreen" class="game-overlay hidden">
+                <button id="startGameButton">SSSStart</button>
+            </div>
 
-        <div id="gameOverScreen" class="game-overlay hidden">
-            <h1 class="big-title">GAME OVER</h1>
-            <p class="big-score">SCORE: <span id="finalScore">0</span></p>
-            <p class="big-score">JE TIJD: <span id="finalTimer">00:00</span></p>
-            
-            <div class="button-group">
-                <button id="restartButton" class="primary-btn">Opnieuw Spelen</button>
+            <div id="gameOverScreen" class="game-overlay hidden">
+                <h1 class="big-title">GAME OVER</h1>
+                <p class="big-score">SCORE: <span id="finalScore">0</span></p>
+                <p class="big-score">JE TIJD: <span id="finalTimer">00:00</span></p>
+                <div class="button-group">
+                    <button id="restartButton" class="primary-btn">Opnieuw Spelen</button>
+                </div>
             </div>
         </div>
     </div>
