@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let powerUpTimer = 0;
     const POWERUP_DURATION = 15; 
 
+    // AFBEELDINGEN
     const foodImage = new Image();
     foodImage.src = 'food.png';
 
@@ -46,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SETUP FUNCTIE ---
     function setupCanvasAndGame() {
-        const availableHeight = window.innerHeight * 0.90;
+        const availableHeight = window.innerHeight * 0.85;
         canvas.height = Math.floor(availableHeight / tileCountY) * tileCountY;
         canvas.width = canvas.height; 
         
@@ -55,19 +56,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createGridPatternMap();
 
-        const canvasTopOffset = canvas.offsetTop;
-        const canvasLeftOffset = canvas.offsetLeft;
-        overlays.forEach(overlay => {
-            overlay.style.top = `${canvasTopOffset}px`;
-            overlay.style.left = `${canvasLeftOffset}px`;
-            overlay.style.width = `${canvas.width}px`;
-            overlay.style.height = `${canvas.height}px`;
-        });
+        // Positioneer overlays exact over canvas
+        setTimeout(() => {
+            overlays.forEach(overlay => {
+                overlay.style.top = `${canvas.offsetTop}px`;
+                overlay.style.left = `${canvas.offsetLeft}px`;
+                overlay.style.width = `${canvas.width}px`;
+                overlay.style.height = `${canvas.height}px`;
+            });
+        }, 50);
         
         let startPos = findSafeSpot();
-        if (!startPos) startPos = { x: 1, y: 1 };
-        
-        snake = [startPos];
+        snake = [startPos || { x: 1, y: 1 }];
         currentSpeed = 80;
         foods = [];
         const initialFood = generateFood();
@@ -98,12 +98,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function createGridPatternMap() {
         gameMap = [];
         const isRail = (x, y) => ((x - 1) % 3 === 0) || ((y - 1) % 3 === 0);
+
         for (let y = 0; y < tileCountY; y++) {
             gameMap[y] = [];
             for (let x = 0; x < tileCountX; x++) {
                 const isBorder = (x === 0 || x === tileCountX - 1 || y === 0 || y === tileCountY - 1);
                 if (isRail(x, y) && !isBorder) {
-                    let exits = { u: 1, d: 1, l: 1, r: 1 }; // Versimpelde rail logica voor flow
+                    let exits = { u: 0, d: 0, l: 0, r: 0 };
+                    if (y > 0 && isRail(x, y - 1) && !(y - 1 === 0)) exits.u = 1;
+                    if (y < tileCountY - 1 && isRail(x, y + 1) && !(y + 1 === tileCountY - 1)) exits.d = 1;
+                    if (x > 0 && isRail(x - 1, y) && !(x - 1 === 0)) exits.l = 1;
+                    if (x < tileCountX - 1 && isRail(x + 1, y) && !(x + 1 === tileCountX - 1)) exits.r = 1;
                     gameMap[y][x] = exits;
                 } else {
                     gameMap[y][x] = { u: 0, d: 0, l: 0, r: 0 };
@@ -113,12 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function findSafeSpot() {
-        for (let y = 5; y < tileCountY; y++) {
-            for (let x = 5; x < tileCountX; x++) {
-                if (gameMap[y][x].u) return { x, y };
+        for (let y = 1; y < tileCountY; y++) {
+            for (let x = 1; x < tileCountX; x++) {
+                if (gameMap[y][x].u || gameMap[y][x].d) return { x, y };
             }
         }
-        return { x: 1, y: 1 };
+        return null;
     }
 
     function startGame() {
@@ -152,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  const head = snake[0];
                  const startTile = gameMap[head.y][head.x];
                  if ((desiredDirection.y === -1 && startTile.u) || (desiredDirection.y === 1 && startTile.d) || (desiredDirection.x === -1 && startTile.l) || (desiredDirection.x === 1 && startTile.r)) {
-                    currentDirection = { ...desiredDirection };
+                    currentDirection = desiredDirection;
                  }
             }
             if (currentDirection.x === 0 && currentDirection.y === 0) return;
@@ -166,25 +171,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const head = snake[0];
         const currentTile = gameMap[head.y][head.x];
         
-        // Richting veranderen op kruispunten
-        if (desiredDirection.x !== currentDirection.x || desiredDirection.y !== currentDirection.y) {
-            if ((desiredDirection.y === -1 && currentTile.u) || (desiredDirection.y === 1 && currentTile.d) || (desiredDirection.x === -1 && currentTile.l) || (desiredDirection.x === 1 && currentTile.r)) {
-                currentDirection = { ...desiredDirection };
-            }
+        if ((desiredDirection.y === -1 && currentTile.u) || (desiredDirection.y === 1 && currentTile.d) || (desiredDirection.x === -1 && currentTile.l) || (desiredDirection.x === 1 && currentTile.r)) {
+            currentDirection = desiredDirection;
         }
 
         const nextHead = { x: head.x + currentDirection.x, y: head.y + currentDirection.y };
         const nextTile = gameMap[nextHead.y]?.[nextHead.x];
         
-        if (!nextTile || (currentDirection.y === -1 && !nextTile.d) || (currentDirection.y === 1 && !nextTile.u) || (currentDirection.x === -1 && !nextTile.r) || (currentDirection.x === 1 && !nextTile.l)) {
-            isGameOver = true; 
-            return; 
+        if (!nextTile || 
+            (currentDirection.y === -1 && !nextTile.d) || 
+            (currentDirection.y === 1 && !nextTile.u) || 
+            (currentDirection.x === -1 && !nextTile.r) || 
+            (currentDirection.x === 1 && !nextTile.l)) { 
+            isGameOver = true; return; 
         }
         
-        if (snake.some(seg => seg.x === nextHead.x && seg.y === nextHead.y)) {
-            isGameOver = true; 
-            return;
-        }
+        if (snake.some(seg => seg.x === nextHead.x && seg.y === nextHead.y)) { isGameOver = true; return; }
         
         snake.unshift(nextHead);
 
@@ -216,18 +218,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let snakeColor = (score >= 20) ? 'red' : (isPoweredUp ? 'orange' : '#4CAF50');
+        let snakeColor = (score >= 30) ? 'red' : (isPoweredUp ? 'orange' : '#4CAF50');
         
-        if (isPoweredUp || score >= 20) {
-            ctx.shadowBlur = score >= 20 ? 25 : 15;
-            ctx.shadowColor = snakeColor;
+        if (isPoweredUp || score >= 30) {
+            ctx.shadowBlur = (score >= 30) ? 25 : 15;
+            ctx.shadowColor = (score >= 30) ? 'red' : 'orange';
         }
 
-        if (snake.length > 0) {
+        if (snake && snake.length > 0) {
             ctx.beginPath();
-            ctx.moveTo(snake[0].x * gridSizeX + gridSizeX / 2, snake[0].y * gridSizeY + gridSizeY / 2);
+            ctx.moveTo(snake[0].x * gridSizeX + gridSizeX/2, snake[0].y * gridSizeY + gridSizeY/2);
             for (let i = 1; i < snake.length; i++) {
-                ctx.lineTo(snake[i].x * gridSizeX + gridSizeX / 2, snake[i].y * gridSizeY + gridSizeY / 2);
+                ctx.lineTo(snake[i].x * gridSizeX + gridSizeX/2, snake[i].y * gridSizeY + gridSizeY/2);
             }
             ctx.strokeStyle = snakeColor;
             ctx.lineWidth = Math.min(gridSizeX, gridSizeY) - 5;
@@ -235,14 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineJoin = 'round';
             ctx.stroke();
             
-            ctx.shadowBlur = 0; // Ogen zonder gloed
+            ctx.shadowBlur = 0;
             const head = snake[0];
-            const headX = head.x * gridSizeX + gridSizeX / 2;
-            const headY = head.y * gridSizeY + gridSizeY / 2;
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(headX - 4, headY - 4, 3, 0, Math.PI * 2);
-            ctx.arc(headX + 4, headY - 4, 3, 0, Math.PI * 2);
+            ctx.arc(head.x * gridSizeX + gridSizeX/2, head.y * gridSizeY + gridSizeY/2, 4, 0, Math.PI*2);
             ctx.fill();
         }
 
@@ -270,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // --- EVENT LISTENERS (Opgeschoond) ---
+    // --- EVENT LISTENERS ---
     showInstructionsButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         instructionsScreen.classList.remove('hidden');
